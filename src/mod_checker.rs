@@ -1,10 +1,26 @@
-
 use std::{error::Error, fs, io::{self ,Read}, path::{Path, PathBuf}};
-
 use crate::config::Config;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ModInfo {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+}
+
+pub fn get_mod_info(mut config: &mut Config){
+    let mut mod_info: Vec<ModInfo> = Vec::new();
+    let mods_path = get_mods_path(&mut config);
+
+    for item in mods_path {
+        mod_info.push(file_reader(&item).expect("something"));
+    }
+
+}
 
 // grabs the file path of all the mods in the mods folder and save to a vec
-pub fn get_file_path(config: &mut Config) -> Vec<PathBuf>{
+pub fn get_mods_path(config: &mut Config) -> Vec<PathBuf>{
     let mut mods: Vec<PathBuf> = Vec::new();
 
     let mut path = PathBuf::from(config.file_path.as_str());
@@ -39,7 +55,7 @@ pub fn get_file_path(config: &mut Config) -> Vec<PathBuf>{
 
 // a jar file is a zip file just different format
 // opens the jar file looks inside for the file
-pub fn file_reader(rpath: &Path) -> Result<String, Box<dyn Error>> {
+pub fn file_reader(rpath: &PathBuf) -> Result<ModInfo, Box<dyn Error>> {
     // tries to open the zip file
     let zipfile = match std::fs::File::open(&rpath) {
         Ok(f) => f,
@@ -62,7 +78,8 @@ pub fn file_reader(rpath: &Path) -> Result<String, Box<dyn Error>> {
     
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    println!("{contents}");
+    let mod_info: ModInfo = serde_json::from_str(&contents).expect("could not serialize json file");
 
-    Ok(contents)
+    Ok(mod_info)
 }
+
