@@ -1,4 +1,4 @@
-use std::{fs::{self, File}, io::{self, Write}, path::PathBuf};
+use std::{fs::{self, File, OpenOptions}, io::{self, Write}, path::PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_yml;
 
@@ -6,8 +6,7 @@ use serde_yml;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub file_path: String,
-    pub mod_loader: String,
-    
+    pub mod_loader: String, 
 }
 
 impl Config {
@@ -20,12 +19,12 @@ impl Config {
     pub fn init() -> Config {
         let mut config: Config = Config { file_path: String::from("/mods"), mod_loader: String::from("fabric") };
         let config_path = PathBuf::from("config.yaml");
-        
+        // reads file for info
         if config_path.exists() {
             let content = fs::read_to_string(config_path).expect("could not read config file to string");
             config = serde_yml::from_str(&content).expect("could not deserialize config file to struct");
-        } else {
-            let mut config_file = File::create(config_path).expect("failed to create config file");
+        } else { // if file don't exists ask user for info
+            let _config_file = File::create(config_path).expect("failed to create config file");
             println!("what mod loader are you using (fabric, forge, neoforge) ");
 
             let mut mod_loader = String::new();
@@ -35,9 +34,9 @@ impl Config {
             mod_loader = mod_loader.trim().to_lowercase();
             config.mod_loader = mod_loader;
 
-            let yaml_write = serde_yml::to_string(&config).expect("failed to serialize");
-            config_file.write_all(yaml_write.as_bytes()).expect("failed to write to file");
+            config.write_to_file();
         }
+        // check that user typed in the right mod loader.
         if !matches!(config.mod_loader.as_str(), "fabric" | "forge" | "neoforge") {
             println!("Sorry we do not support {} mod loader", config.mod_loader);
             loop {
@@ -57,5 +56,13 @@ impl Config {
         }
         
         config
+    }
+
+    // does what it says write to config file with the config, overwrite anything else
+    pub fn write_to_file(&self) {
+        let mut config_file = OpenOptions::new().create(true).write(true).truncate(true).open("config.yaml").expect("could't open file");
+
+        let yaml_write = serde_yml::to_string(&self).expect("failed to serialize");
+        config_file.write_all(yaml_write.as_bytes()).expect("failed to write to file");
     }
 }

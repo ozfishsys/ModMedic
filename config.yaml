@@ -1,2 +1,2 @@
-file_path: /mods
+file_path: './test_folder/mods'
 mod_loader: fabric

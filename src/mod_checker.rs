@@ -1,4 +1,4 @@
-use std::{error::Error, fs, io::{self ,Read}, path::{Path, PathBuf}};
+use std::{error::Error, fs, io::{self ,Read}, path::PathBuf};
 use crate::config::Config;
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +16,8 @@ pub fn get_mod_info(mut config: &mut Config){
     for item in mods_path {
         mod_info.push(file_reader(&item).expect("something"));
     }
+    println!("{:?}", mod_info);
+    println!("{:?}", mod_info.len());
 
 }
 
@@ -50,6 +52,7 @@ pub fn get_mods_path(config: &mut Config) -> Vec<PathBuf>{
             mods.push(path);
         }
     }
+    config.write_to_file();
     mods
 }
 
@@ -65,13 +68,13 @@ pub fn file_reader(rpath: &PathBuf) -> Result<ModInfo, Box<dyn Error>> {
         }
     };
 
-    let mut archive = zip::ZipArchive::new(zipfile).unwrap();
+    let mut archive = zip::ZipArchive::new(zipfile).expect("failed to archive file");
 
     // tries to read the need file
     let mut file = match archive.by_name("fabric.mod.json") {
         Ok(file) => file,
         Err(e) => {
-            println!("File not found");
+            println!("{:?} File not found ", rpath);
             return Err(e.into());
         }
     };
@@ -82,4 +85,3 @@ pub fn file_reader(rpath: &PathBuf) -> Result<ModInfo, Box<dyn Error>> {
 
     Ok(mod_info)
 }
-
