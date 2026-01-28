@@ -1,4 +1,4 @@
-use std::{error::Error, fs, io::{self ,Read}, path::PathBuf};
+use std::{collections::HashMap, error::Error, fs, io::{self ,Read}, path::PathBuf};
 use crate::config::Config;
 use serde::{Deserialize, Serialize};
 
@@ -10,14 +10,23 @@ pub struct ModInfo {
 }
 
 pub fn get_mod_info(mut config: &mut Config){
-    let mut mod_info: Vec<ModInfo> = Vec::new();
+    let mut mod_info: HashMap< String, ModInfo> = HashMap::new();
     let mods_path = get_mods_path(&mut config);
 
     for item in mods_path {
-        mod_info.push(file_reader(&item).expect("something"));
+        let modinfo = file_reader(&item).expect("something");
+        if mod_info.contains_key(&modinfo.id) {
+            println!("there 2 mods with id {}", modinfo.id);
+            println!("name: {}, id: {}, version: {}", modinfo.id, modinfo.name, modinfo.version);
+            let modinfo1 = mod_info.get(&modinfo.id).expect("a");
+            println!("name: {}, id: {}, version: {}", modinfo1.id, modinfo1.name, modinfo1.version);
+        } else {
+            let id = &modinfo.id;
+            mod_info.insert(id.to_string(), modinfo);
+        }
     }
-    println!("{:?}", mod_info);
-    println!("{:?}", mod_info.len());
+    //println!("{:?}", mod_info);
+    println!("amount of mods {:?}", mod_info.len());
 
 }
 
@@ -78,7 +87,7 @@ pub fn file_reader(rpath: &PathBuf) -> Result<ModInfo, Box<dyn Error>> {
             return Err(e.into());
         }
     };
-    
+
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
     let mod_info: ModInfo = serde_json::from_str(&contents).expect("could not serialize json file");
